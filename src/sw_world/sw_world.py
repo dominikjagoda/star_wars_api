@@ -2,6 +2,7 @@ import requests
 import random
 import json
 import time
+import os
 import yaml
 import logging
 from typing import Any
@@ -57,19 +58,43 @@ class SWWorld:
         people_data = {"name": people.get("name"), "height": people.get("height")}
         planet_data = {"name": planet.get("name"), "height": planet.get("terrain")}
 
-        return {"people": people_data, "planets": planet_data}
+        return {"people": [people_data], "planets": [planet_data]}
 
-    def check_if_yaml_field_exist(self, field_name, field_type, yaml_path):
-        with open(yaml_path, "r") as f:
-            yaml_data = yaml.safe_load(f)
-            for field in yaml_data[field_type]:
-                if field_name in field.values():
-                    logging.warning(f"Field {field_name} already exists in {yaml_path}")
-                    return True
-                else:
-                    return False
+    def _check_if_yaml_field_exist(self, yaml_data, field_name):
+        for elemnet in yaml_data:
+            if field_name in elemnet.values():
+                logging.warning(f"Field {field_name} already exists.")
+                return True
+            else:
+                return False
 
-    def to_yaml(self, data, yaml_path):
+    def append_row(self, data, field_type):
+        yaml_path = self._config["output_path"]
+        if os.path.exists(yaml_path):
+            with open(yaml_path, "r") as f:
+                yaml_data = yaml.safe_load(f)
+
+            elemnets_number = len(yaml_data[field_type])
+            # Checks if number of people or planet reach `count_of_people_and_planet`
+            if elemnets_number >= self._config["count_of_people_and_planet"]:
+                logging.warning(
+                    f"Number of {field_type} reach `count_of_people_and_planet`."
+                )
+                return yaml_data[field_type]
+
+            exist = self._check_if_yaml_field_exist(
+                yaml_data=yaml_data[field_type], field_name=data[0]["name"]
+            )
+
+            if not exist:
+                yaml_data[field_type].extend(data)
+
+            return yaml_data[field_type]
+        else:
+            return data
+
+    def to_yaml(self, data):
+        yaml_path = self._config["output_path"]
         with open(yaml_path, "w") as f:
             yaml.dump(data, f)
 
@@ -77,11 +102,10 @@ class SWWorld:
 def main():
     sw = SWWorld(config_path="/home/domino/star_wars_api/src/sw_world/config.json")
     data = sw.select_data_from_json()
-    result = sw.check_if_yaml_field_exist(
-        field_name=data["people"]["name"],
-        yaml_path="/home/domino/star_wars_api/src/test.yaml",
-    )
-    sw.to_yaml(data=data, yaml_path="/home/domino/star_wars_api/src/test.yaml")
+    data1 = sw.append_row(data=data["people"], field_type="people")
+    data2 = sw.append_row(data=data["planets"], field_type="planets")
+    data = {"people": data1, "planets": data2}
+    sw.to_yaml(data=data)
 
 
 if __name__ == "__main__":
