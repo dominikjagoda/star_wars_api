@@ -2,6 +2,7 @@ import requests
 import random
 import json
 import time
+import argparse
 import os
 import yaml
 import logging
@@ -46,11 +47,12 @@ class SWWorld:
 
     def to_json(self) -> dict[str, Any]:
         self.add_person()
+        time.sleep(self.interval)
         self.add_planet()
 
         return {"people": self.people, "planets": self.planets}
 
-    def select_data_from_json(self):
+    def select_data_from_json(self) -> dict[str, Any]:
         data = self.to_json()
         people = data["people"][0]
         planet = data["planets"][0]
@@ -60,13 +62,13 @@ class SWWorld:
 
         return {"people": [people_data], "planets": [planet_data]}
 
-    def _check_if_yaml_field_exist(self, yaml_data, field_name):
+    def _check_if_yaml_field_exist(self, yaml_data, field_name) -> bool:
         for elemnet in yaml_data:
             if field_name in elemnet.values():
                 logging.warning(f"Field {field_name} already exists.")
                 return True
-            else:
-                return False
+
+        return False
 
     def append_row(self, data, field_type):
         yaml_path = self._config["output_path"]
@@ -80,18 +82,17 @@ class SWWorld:
                 logging.warning(
                     f"Number of {field_type} reach `count_of_people_and_planet`."
                 )
-                return yaml_data[field_type]
+                return yaml_data[field_type], elemnets_number
 
             exist = self._check_if_yaml_field_exist(
                 yaml_data=yaml_data[field_type], field_name=data[0]["name"]
             )
-
             if not exist:
                 yaml_data[field_type].extend(data)
 
-            return yaml_data[field_type]
+            return yaml_data[field_type], elemnets_number
         else:
-            return data
+            return (data, 0)
 
     def to_yaml(self, data):
         yaml_path = self._config["output_path"]
@@ -100,12 +101,27 @@ class SWWorld:
 
 
 def main():
-    sw = SWWorld(config_path="/home/domino/star_wars_api/src/sw_world/config.json")
-    data = sw.select_data_from_json()
-    data1 = sw.append_row(data=data["people"], field_type="people")
-    data2 = sw.append_row(data=data["planets"], field_type="planets")
-    data = {"people": data1, "planets": data2}
-    sw.to_yaml(data=data)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--interval", type=int, help="Interval number")
+    args = parser.parse_args()
+    interval = args.interval
+    while True:
+        sw = SWWorld(
+            config_path="/home/domino/star_wars_api/src/sw_world/config.json",
+            interval=interval,
+        )
+        sw_data = sw.select_data_from_json()
+        sw_people, people_number = sw.append_row(
+            data=sw_data["people"], field_type="people"
+        )
+        sw_planets, planets_number = sw.append_row(
+            data=sw_data["planets"], field_type="planets"
+        )
+        elements_limit = sw._config["count_of_people_and_planet"]
+        if (people_number >= elements_limit) and (planets_number >= elements_limit):
+            break
+        data = {"people": sw_people, "planets": sw_planets}
+        sw.to_yaml(data=data)
 
 
 if __name__ == "__main__":
