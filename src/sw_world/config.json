@@ -1,0 +1,6 @@
+{
+    "output_path": "/home/domino/star_wars_api/output.yaml",
+    "max_person": 4,
+    "max_planets": 4,
+    "count_of_people_and_planet": 3
+}
