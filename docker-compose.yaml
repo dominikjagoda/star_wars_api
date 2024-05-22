@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  swworld:
+    build: .
+    container_name: swworld_container
+    volumes:
+      - ./src/sw_world:/app/src/sw_world/

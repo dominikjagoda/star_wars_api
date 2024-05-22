@@ -1,0 +1,23 @@
+[project]
+name = "sw_world"
+version = "0.1.0"
+description = "Star Wars API testing application."
+authors = [
+    { name = "Dominik Jagoda", email = "dominik.jagoda881@gmail.com" },
+]
+requires-python = ">=3.10"
+readme = "README.md"
+dependencies = [
+    "PyYAML>=6.0.1",
+    "requests>=2.32.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest >=  8.2.1"
+]
+
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
